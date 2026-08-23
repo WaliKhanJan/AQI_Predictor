@@ -8,14 +8,25 @@ from xgboost import XGBRegressor
 # ---------------------------------------------------------------------------
 # Load data
 # ---------------------------------------------------------------------------
+import os
+import hopsworks
+from dotenv import load_dotenv
+
+os.makedirs("/tmp", exist_ok=True)
+load_dotenv()
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 BASE_DIR = os.path.dirname(BASE_DIR)
 
-data_path = os.path.join(BASE_DIR, "data", "engineered_features.csv")
-df = pd.read_csv(data_path)
+api_key = os.getenv("HOPSWORKS_API_KEY")
+project = hopsworks.login(api_key_value=api_key)
+fs = project.get_feature_store()
+
+aqi_fg = fs.get_feature_group(name="aqi_features", version=1)
+df = aqi_fg.read()
 df["time"] = pd.to_datetime(df["time"])
 
-print(f"Loaded {len(df)} rows from local file")
+print(f"Loaded {len(df)} rows from Hopsworks Feature Store")
 
 # ---------------------------------------------------------------------------
 # Chronological train/test split — never shuffle time-series data
@@ -89,7 +100,9 @@ model_72h, metrics_72h = train_and_evaluate(
 
 print("\nTraining complete. Models ready for saving to Model Registry.")
 
-# Pushing Models to HopsWork
+
+
+# SAVING MODELS TO HOPSWORK
 import hopsworks
 from dotenv import load_dotenv
 import joblib
