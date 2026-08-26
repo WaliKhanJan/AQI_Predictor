@@ -45,10 +45,13 @@ load_dotenv()
 def get_recent_history(fs, hours_needed=24):
     """Pull the most recent rows from the Feature Store to compute lag features."""
     aqi_fg = fs.get_feature_group(name="aqi_features", version=1)
-    df = aqi_fg.read()
+    try:
+        df = aqi_fg.read()
+    except Exception:
+        df = aqi_fg.read(read_options={"use_hive": True})
     df["time"] = pd.to_datetime(df["time"])
     df = df.sort_values("time")
-    return df.tail(hours_needed + 5)  # small buffer
+    return df.tail(hours_needed + 5)
 
 def build_live_row(fs):
     weather_json = fetch_current_weather()
