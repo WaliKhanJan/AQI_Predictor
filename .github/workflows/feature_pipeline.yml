@@ -13,14 +13,6 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
 
-      - name: List files (debug)
-        run: |
-          pwd
-          echo "--- top level ---"
-          ls -la
-          echo "--- src/ ---"
-          ls -la src/
-
       - name: Set up Python
         uses: actions/setup-python@v5
         with:

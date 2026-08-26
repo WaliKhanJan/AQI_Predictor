@@ -72,7 +72,7 @@ def build_live_row(fs):
     merged["city"] = CITY
     merged["time"] = pd.to_datetime(merged["time"])
 
-    # Take the most recent complete hour (not the forecast hour)
+    # Take the most recent complete hour 
     new_row = merged.iloc[[-2]].copy().reset_index(drop=True)
 
     # Time-based features
