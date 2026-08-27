@@ -5,7 +5,7 @@ CITIES = {
     "Islamabad": {"lat": 33.6844, "lon": 73.0479},
 }
 START_DATE = "2024-01-01"
-END_DATE = "2026-07-31"
+END_DATE = "2026-08-25"
 
 def fetch_weather(lat, lon, start_date, end_date):
     url = "https://archive-api.open-meteo.com/v1/archive"

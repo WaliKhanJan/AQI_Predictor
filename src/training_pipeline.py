@@ -5,9 +5,7 @@ from sklearn.linear_model import Ridge
 from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
 from xgboost import XGBRegressor
 
-# ---------------------------------------------------------------------------
 # Load data
-# ---------------------------------------------------------------------------
 import os
 import hopsworks
 from dotenv import load_dotenv
@@ -28,9 +26,7 @@ df["time"] = pd.to_datetime(df["time"])
 
 print(f"Loaded {len(df)} rows from Hopsworks Feature Store")
 
-# ---------------------------------------------------------------------------
 # Chronological train/test split — never shuffle time-series data
-# ---------------------------------------------------------------------------
 SPLIT_DATE = "2026-02-01"
 train = df[df["time"] < SPLIT_DATE].copy()
 test = df[df["time"] >= SPLIT_DATE].copy()
@@ -41,9 +37,7 @@ test = test.dropna()
 print(f"Train: {len(train)} rows ({train['time'].min()} to {train['time'].max()})")
 print(f"Test: {len(test)} rows ({test['time'].min()} to {test['time'].max()})")
 
-# ---------------------------------------------------------------------------
 # Features and targets
-# ---------------------------------------------------------------------------
 feature_cols = [
     "temperature_2m", "relative_humidity_2m", "dew_point_2m", "precipitation",
     "surface_pressure", "wind_speed_10m", "wind_direction_10m",
@@ -56,14 +50,13 @@ feature_cols = [
 X_train = train[feature_cols]
 X_test = test[feature_cols]
 
-# ---------------------------------------------------------------------------
+
 # Final model selection (chosen after comparing Ridge / Random Forest / XGBoost
 # across all three horizons — see src/model_comparison.py for the full comparison
 # and reasoning):
 #   - 24h: XGBoost  (best performer at the shortest, strongest-signal horizon)
 #   - 48h: Ridge    (matched/outperformed tree-based models as signal weakens)
 #   - 72h: Ridge    (same reasoning as 48h)
-# ---------------------------------------------------------------------------
 
 def train_and_evaluate(model, horizon_name, target_col):
     y_train = train[target_col]
@@ -114,9 +107,6 @@ api_key = os.getenv("HOPSWORKS_API_KEY")
 project = hopsworks.login(api_key_value=api_key)
 mr = project.get_model_registry()
 
-# ---------------------------------------------------------------------------
-# Save each model locally first (Hopsworks needs a file path to upload)
-# ---------------------------------------------------------------------------
 models_dir = os.path.join(BASE_DIR, "models")
 os.makedirs(models_dir, exist_ok=True)
 
@@ -124,9 +114,8 @@ joblib.dump(model_24h, os.path.join(models_dir, "model_24h.pkl"))
 joblib.dump(model_48h, os.path.join(models_dir, "model_48h.pkl"))
 joblib.dump(model_72h, os.path.join(models_dir, "model_72h.pkl"))
 
-# ---------------------------------------------------------------------------
+
 # Register each model in the Model Registry, with its metrics attached
-# ---------------------------------------------------------------------------
 def register_model(model_name, model_path, metrics, description):
     model_meta = mr.python.create_model(
         name=model_name,

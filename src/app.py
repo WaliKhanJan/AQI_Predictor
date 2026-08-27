@@ -23,7 +23,7 @@ FEATURE_COLS = [
 
 
 def safe_read(aqi_fg):
-    """Try the default read; fall back to use_hive if the Query Service is flaky."""
+    """Try the default read; fall back to use_hive if the Query Service is not working."""
     try:
         return aqi_fg.read()
     except Exception:
@@ -60,24 +60,20 @@ def get_feature_store_data():
     return df
 
 
-# ---------------------------------------------------------------------------
 # Load models
-# ---------------------------------------------------------------------------
 with st.spinner("Loading models..."):
     model_24h, model_48h, model_72h = load_models()
 st.success("Models loaded successfully")
 
-# ---------------------------------------------------------------------------
 # Load data (one read, used everywhere below)
-# ---------------------------------------------------------------------------
 with st.spinner("Fetching latest data..."):
     df = get_feature_store_data()
 
-latest_row = df.iloc[-1]
+complete_rows = df.dropna(subset=FEATURE_COLS)
+latest_row = complete_rows.iloc[-1]
+st.caption(f"Prediction based on: {latest_row['time']} (UTC) — most recent row with complete feature data")
 
-# ---------------------------------------------------------------------------
 # Predictions
-# ---------------------------------------------------------------------------
 X_latest = pd.DataFrame([latest_row[FEATURE_COLS]])
 
 pred_24h = model_24h.predict(X_latest)[0]
@@ -95,18 +91,14 @@ for col, horizon, pred in zip([col1, col2, col3], ["24h", "48h", "72h"], [pred_2
         if info["alert"]:
             st.warning(f"⚠️ {info['category']}")
 
-# ---------------------------------------------------------------------------
 # Recent trend chart
-# ---------------------------------------------------------------------------
 st.subheader("Recent AQI Trend")
 trend_df = df.tail(72)[["time", "us_aqi"]]
 st.caption(f"Showing {len(trend_df)} most recent stored hours "
            f"({trend_df['time'].min()} to {trend_df['time'].max()})")
 st.line_chart(trend_df.set_index("time"))
 
-# ---------------------------------------------------------------------------
 # Forecast trajectory chart
-# ---------------------------------------------------------------------------
 st.subheader("Forecast Trajectory")
 forecast_data = pd.DataFrame({
     "Time": ["Now", "+24h", "+48h", "+72h"],
@@ -114,9 +106,7 @@ forecast_data = pd.DataFrame({
 })
 st.bar_chart(forecast_data.set_index("Time"))
 
-# ---------------------------------------------------------------------------
 # Alerts
-# ---------------------------------------------------------------------------
 predictions_dict = {"24h": pred_24h, "48h": pred_48h, "72h": pred_72h}
 alerts = check_forecast_alerts(predictions_dict)
 
@@ -129,3 +119,4 @@ else:
     st.info("Forecasted AQI levels remain within acceptable ranges for the next 3 days.")
 
 st.caption(f"Latest data: {latest_row['time']} (UTC) | City: {latest_row['city']}")
+st.caption("Built by Wali Muhammad Nasir")
