@@ -95,7 +95,9 @@ def build_live_row(fs):
     # Pull recent history to compute lags
     history = get_recent_history(fs)
     row_time = new_row["time"].iloc[0]
-
+    if row_time.tzinfo is None:
+        row_time = row_time.tz_localize("UTC")
+        
     lag_1h = get_lag_value(history, row_time - timedelta(hours=1))
     lag_3h = get_lag_value(history, row_time - timedelta(hours=3))
     lag_6h = get_lag_value(history, row_time - timedelta(hours=6))
