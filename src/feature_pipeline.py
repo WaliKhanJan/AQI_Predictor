@@ -122,6 +122,12 @@ def build_live_row(fs):
     new_row["target_48h"] = None
     new_row["target_72h"] = None
 
+    float_cols = ["aqi_lag_1h", "aqi_lag_3h", "aqi_lag_6h", "aqi_lag_24h", "aqi_change_rate_1h", "aqi_change_rate_24h"]
+    for col in float_cols:
+        new_row[col] = new_row[col].astype("float64")
+
+    return new_row
+
     return new_row
 
 # Insert into Feature Store
