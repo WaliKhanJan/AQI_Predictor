@@ -50,6 +50,8 @@ def get_recent_history(fs, hours_needed=24):
     except Exception:
         df = aqi_fg.read(read_options={"use_hive": True})
     df["time"] = pd.to_datetime(df["time"])
+    if df["time"].dt.tz is None:
+        df["time"] = df["time"].dt.tz_localize("UTC")
     df = df.sort_values("time").reset_index(drop=True)
     return df.tail(hours_needed + 48)  # wider buffer so the tolerance match below has enough rows to search
 
