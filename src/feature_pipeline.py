@@ -55,8 +55,6 @@ def get_recent_history(fs, hours_needed=24):
 
 
 def get_lag_value(history, target_time, tolerance_hours=2):
-    """Find the closest available row to target_time, within a tolerance window
-    (an exact match is unreliable since scheduled runs happen at irregular times)."""
     if len(history) == 0:
         return None
     time_diffs = (history["time"] - target_time).abs()
