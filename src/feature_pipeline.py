@@ -1,4 +1,4 @@
-# Step 1: Fetch live data from Open-Meteo
+# Fetch live data from Open-Meteo
 
 import os
 import requests
@@ -35,7 +35,7 @@ def fetch_current_air_quality():
     response.raise_for_status()
     return response.json()
 
-# Step 2: Build the new row, using Feature Store history for lags
+# Build the new row, using Feature Store history for lags
 import hopsworks
 from dotenv import load_dotenv
 
@@ -50,8 +50,21 @@ def get_recent_history(fs, hours_needed=24):
     except Exception:
         df = aqi_fg.read(read_options={"use_hive": True})
     df["time"] = pd.to_datetime(df["time"])
-    df = df.sort_values("time")
-    return df.tail(hours_needed + 5)
+    df = df.sort_values("time").reset_index(drop=True)
+    return df.tail(hours_needed + 48)  # wider buffer so the tolerance match below has enough rows to search
+
+
+def get_lag_value(history, target_time, tolerance_hours=2):
+    """Find the closest available row to target_time, within a tolerance window
+    (an exact match is unreliable since scheduled runs happen at irregular times)."""
+    if len(history) == 0:
+        return None
+    time_diffs = (history["time"] - target_time).abs()
+    closest_idx = time_diffs.idxmin()
+    if time_diffs[closest_idx] <= pd.Timedelta(hours=tolerance_hours):
+        return history.loc[closest_idx, "us_aqi"]
+    return None
+
 
 def build_live_row(fs):
     weather_json = fetch_current_weather()
@@ -83,20 +96,20 @@ def build_live_row(fs):
 
     # Pull recent history to compute lags
     history = get_recent_history(fs)
+    row_time = new_row["time"].iloc[0]
 
-    def get_lag_value(hours_back):
-        target_time = new_row["time"].iloc[0] - timedelta(hours=hours_back)
-        match = history[history["time"] == target_time]
-        return match["us_aqi"].iloc[0] if len(match) > 0 else None
+    lag_1h = get_lag_value(history, row_time - timedelta(hours=1))
+    lag_3h = get_lag_value(history, row_time - timedelta(hours=3))
+    lag_6h = get_lag_value(history, row_time - timedelta(hours=6))
+    lag_24h = get_lag_value(history, row_time - timedelta(hours=24))
 
-    new_row["aqi_lag_1h"] = get_lag_value(1)
-    new_row["aqi_lag_3h"] = get_lag_value(3)
-    new_row["aqi_lag_6h"] = get_lag_value(6)
-    new_row["aqi_lag_24h"] = get_lag_value(24)
+    new_row["aqi_lag_1h"] = lag_1h
+    new_row["aqi_lag_3h"] = lag_3h
+    new_row["aqi_lag_6h"] = lag_6h
+    new_row["aqi_lag_24h"] = lag_24h
 
-    new_row["aqi_change_rate_1h"] = new_row["us_aqi"].iloc[0] - new_row["aqi_lag_1h"].iloc[0] if new_row["aqi_lag_1h"].iloc[0] is not None else None
-    new_row["aqi_change_rate_24h"] = new_row["us_aqi"].iloc[0] - new_row["aqi_lag_24h"].iloc[0] if new_row["aqi_lag_24h"].iloc[0] is not None else None
-
+    new_row["aqi_change_rate_1h"] = new_row["us_aqi"].iloc[0] - lag_1h if lag_1h is not None else None
+    new_row["aqi_change_rate_24h"] = new_row["us_aqi"].iloc[0] - lag_24h if lag_24h is not None else None
 
     new_row["hour"] = new_row["hour"].astype("int64")
     new_row["day"] = new_row["day"].astype("int64")
@@ -109,10 +122,7 @@ def build_live_row(fs):
 
     return new_row
 
-
-    return new_row
-
-#Step 3: Insert into Feature Store
+# Insert into Feature Store
 
 def main():
     api_key = os.getenv("HOPSWORKS_API_KEY")
