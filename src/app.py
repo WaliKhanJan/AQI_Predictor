@@ -48,14 +48,20 @@ def safe_read(aqi_fg):
 
 
 @st.cache_resource
+def get_latest_model_dir(mr, name):
+    models = mr.get_models(name)
+    latest = max(models, key=lambda m: m.version)
+    return latest.download()
+
+@st.cache_resource(ttl=86400)
 def load_models():
     api_key = os.getenv("HOPSWORKS_API_KEY")
     project = hopsworks.login(api_key_value=api_key)
     mr = project.get_model_registry()
 
-    model_24h_dir = mr.get_model("aqi_model_24h", version=2).download()
-    model_48h_dir = mr.get_model("aqi_model_48h", version=2).download()
-    model_72h_dir = mr.get_model("aqi_model_72h", version=2).download()
+    model_24h_dir = get_latest_model_dir(mr, "aqi_model_24h")
+    model_48h_dir = get_latest_model_dir(mr, "aqi_model_48h")
+    model_72h_dir = get_latest_model_dir(mr, "aqi_model_72h")
 
     model_24h = joblib.load(os.path.join(model_24h_dir, "model_24h.pkl"))
     model_48h = joblib.load(os.path.join(model_48h_dir, "model_48h.pkl"))
