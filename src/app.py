@@ -46,8 +46,6 @@ def safe_read(aqi_fg):
     except Exception:
         return aqi_fg.read(read_options={"use_hive": True})
 
-
-@st.cache_resource
 def get_latest_model_dir(mr, name):
     models = mr.get_models(name)
     latest = max(models, key=lambda m: m.version)
