@@ -128,9 +128,6 @@ pred_24h = model_24h.predict(X_latest)[0]
 pred_48h = model_48h.predict(X_latest)[0]
 pred_72h = model_72h.predict(X_latest)[0]
 
-st.write(f"48h prediction (raw): {pred_48h}")
-st.write(f"72h prediction (raw): {pred_72h}")
-
 st.caption(f"Prediction based on: {latest_row['time']} (UTC) — most recent row with complete feature data")
 
 current_aqi = latest_row["us_aqi"]
