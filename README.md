@@ -228,7 +228,6 @@ These were real issues hit during development — documented here so they don't 
 
 - **`hopsworks` fails to install on Windows** with a `twofish`/C++ compiler error → install Visual C++ Build Tools first.
 - **`hopsworks.login()` fails with a missing `/tmp` path on Windows** → create the directory, or rely on the `os.makedirs("/tmp", exist_ok=True)` already present in the scripts.
-- **Feature Group creation fails under the default `DELTA` storage format** → this project uses `time_travel_format="HUDI"` instead, avoiding an Apache Spark/Java dependency chain.
 - **Hopsworks' Arrow Flight Query Service intermittently fails to read data** (`FlightUnavailableError`) → all read paths fall back to `read_options={"use_hive": True}` on failure.
 - **Streamlit Cloud deploy fails with `ModuleNotFoundError: No module named 'imp'`** → caused by Streamlit Cloud defaulting to Python 3.14, which removed the `imp` module; fixed via `runtime.txt` pinning Python 3.11.
 - **Lag features come back `None` on live rows** → caused by GitHub Actions' irregular scheduling breaking an exact-timestamp lag match; resolved with a nearest-match-within-tolerance approach in `feature_pipeline.py`.
@@ -241,4 +240,4 @@ A detailed report covering data source selection reasoning, EDA findings, model 
 
 ---
 
-**Built by Wali Nasir** — Internship Project, 10Pearls Shine Program
+**Built by Wali Muhammad Nasir** — Internship Project, 10Pearls Shine Program - Cohort 9
